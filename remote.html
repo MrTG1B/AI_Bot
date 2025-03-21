@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ESP32 Bot Control</title>
+    <style>
+        body { text-align: center; font-family: Arial, sans-serif; width: 100%;height: 100%; }
+        .btn { width: 80px; height: 50px; font-size: 18px; margin: 10px; cursor: pointer; }
+        .up { background: #28a745; grid-row-start: 1;grid-row-end:1;grid-column-start: 2;grid-column-end: 2;} 
+        .down { background: #ffa500; grid-row-start: 3;grid-row-end:3;grid-column-start: 2;grid-column-end: 2;}
+        .left, .right { background: #007bff; }
+        .stop { background: #ff4d00; grid-row-start: 2;grid-row-end:2;grid-column-start: 2;grid-column-end: 2; border-radius: 50%;height:80px;width:80px;}
+        .left{ grid-row-start: 2;grid-row-end:2;grid-column-start: 1;grid-column-end: 1;}
+        .right{ grid-row-start: 2;grid-row-end:2;grid-column-start: 3;grid-column-end: 3;}
+        #controls { display: flex; flex-direction: column; align-items: center; justify-content: center; align-self: center; width: 100%;height: 100%;}
+        #direction-buttons { display: grid; grid-template-columns: auto auto auto; gap: 10px; align-items: center;justify-content: center;align-self: center;}
+        #speedControl { margin-top: 30px; }
+    </style>
+</head>
+<body>
+    <h2>ESP32 Bot Control</h2>
+    <div id="controls">
+        <div id="direction-buttons">
+            <button class="btn up" onclick="sendCommand(0, 100)">▲</button>
+            <button class="btn left" onclick="sendCommand(-100, 0)">◄</button>
+            <button class="btn stop" onclick="sendCommand(0, 0)">■</button>
+            <button class="btn right" onclick="sendCommand(100, 0)">►</button>
+            <button class="btn down" onclick="sendCommand(0, -100)">▼</button>
+        </div>
+        <div id="speedControl">
+            <label>Speed:</label>
+            <input type="range" id="speedSlider" min="0" max="255" value="150" onchange="updateSpeed(this.value)">
+        </div>
+    </div>
+
+    <script>
+        let ws;
+
+        function connectWebSocket() {
+            ws = new WebSocket("ws://" + window.location.hostname + "/ws");
+
+            ws.onopen = function () {
+                console.log("Connected to WebSocket");
+            };
+
+            ws.onmessage = function (event) {
+                console.log("Received: " + event.data);
+            };
+
+            ws.onclose = function () {
+                console.log("WebSocket disconnected, retrying...");
+                setTimeout(connectWebSocket, 2000);
+            };
+        }
+
+        function sendCommand(x, y) {
+            if (ws.readyState === WebSocket.OPEN) {
+                ws.send(`${x},${y}`);
+            } else {
+                console.error("WebSocket not connected!");
+            }
+        }
+
+        function updateSpeed(value) {
+            fetch(`/speed?val=` + value)
+                .then(response => response.text())
+                .then(data => console.log("Speed set to: " + data))
+                .catch(error => console.error("Error setting speed:", error));
+        }
+
+        window.onload = function () {
+            connectWebSocket();
+        };
+    </script>
+</body>
+</html>
