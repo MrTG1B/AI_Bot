@@ -7,8 +7,6 @@ app = Flask(__name__)
 def alldata():
     try:
         data = request.get_json()
-        
-        # Ensure data is a string
         if isinstance(data, dict) and "message" in data:
             data = data["message"]
         elif not isinstance(data, str):

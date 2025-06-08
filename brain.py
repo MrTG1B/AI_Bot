@@ -1,99 +1,31 @@
+import os
+from dotenv import load_dotenv
 from google import genai
 from google.genai import types
 
-API="AIzaSyADu__HabzmZkr4gAJWgiSvANlailhdkqM"
+# Load environment variables from .env file
+load_dotenv()
 
-SYSTEM_INSTRUCTION ="""
-Objective:
-You are an AI system responsible for processing real-time sensor data from a robot and determining its movement path. Based on the sensor inputs, you must return an appropriate direction and speed for the robot to navigate safely and efficiently.
+# Fetch API key from .env
+API = os.getenv("GEMINI_API_KEY")
 
-Input:
-The ESP32 will send structured sensor data in the prompt, including but not limited to:
+# Read system instruction from file
+file_path = "System_inst.txt"
+with open(file_path, "r") as file:
+    SYSTEM_INSTRUCTION = file.read()
 
-- **Ultrasonic / LiDAR (VL53L0X) sensors**: Distance measurements from multiple directions.
-- **IMU (Accelerometer & Gyroscope)**: Orientation and tilt of the bot.
-- **IR / Edge Detection Sensors**: Detecting obstacles or edges.
-- **Wheel Encoders**: Speed and distance tracking.
-- **Other sensors (if applicable)**: Additional environmental data.
-
-Processing Requirements:
-1. **Analyze the provided sensor data** to detect obstacles, free paths, and possible movement options.
-2. **Calculate the optimal direction** to move while avoiding collisions.
-3. **Adjust speed dynamically** based on surrounding conditions.
-4. **Ensure smooth and stable movement transitions** to prevent abrupt changes.
-5. **If no clear path exists, suggest stopping or reversing**.
-6. **Handle inconsistent or missing sensor data gracefully**, requesting rechecks if necessary.
-
-Prompt Format:
-The sensor data will be provided in the prompt in a structured format, such as JSON or a descriptive sentence. Example:
-
-```json
-{
-  "front_distance": 30,
-  "left_distance": 80,
-  "right_distance": 20,
-  "imu": {"tilt": 5, "orientation": "upright"},
-  "speed": 120
-}
-```
-OR
-
-"The robot detects an obstacle 30 cm ahead, has 80 cm clearance on the left, and 20 cm on the right. It is upright and moving at speed 120."
-
-Output Format:
-Your response must be a JSON object with the following fields:
-
-```json
-{
-  "direction": "FORWARD",  // Options: FORWARD, BACKWARD, LEFT, RIGHT, STOP
-  "speed": 120  // Speed value (0-255 for PWM control)
-}
-```
-
-Example Scenarios:
-1. If an obstacle is detected at the front, but the left side is clear:
-```json
-{
-  "direction": "LEFT",
-  "speed": 100
-}
-```
-2. If no obstacles are detected, move forward at optimal speed:
-```json
-{
-  "direction": "FORWARD",
-  "speed": 200
-}
-```
-3. If all paths are blocked, stop:
-```json
-{
-  "direction": "STOP",
-  "speed": 0
-}
-```
-
-Additional Considerations:
-- Maintain real-time responsiveness to sensor data updates.
-- Avoid abrupt movements to prevent instability.
-- If sensor data is inconsistent, request a recheck before making a decision.
-
-
-
-
-"""
 def get_response(prompt):
     client = genai.Client(api_key=API)
-    # model = genai.GenerativeModel("gemini-1.5-flash", api_key=API) 
     response = client.models.generate_content(
-    model="gemini-2.0-flash",
-    contents=[prompt],
-    config=types.GenerateContentConfig(
-        system_instruction=SYSTEM_INSTRUCTION,
-        temperature=0.7,
-        top_p=0.9),
+        model="gemini-2.0-flash",
+        contents=[prompt],
+        config=types.GenerateContentConfig(
+            system_instruction=SYSTEM_INSTRUCTION,
+            temperature=0.7,
+            top_p=0.9
+        ),
     )
-
     return response.text
 
-# print(get_response("The robot is moving forward and detects an obstacle in front of it. The left side is clear."))
+# Test the function
+print(get_response("The robot is moving forward and detects an obstacle in front of it. The left side is clear."))
